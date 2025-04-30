@@ -15,6 +15,8 @@ def setup_crab_query_parser(parser):
                " automatically increases 'maxjobruntime' or 'maxmemory'"
                " if jobs failed with the corresponding error code."
                " also resubmits publication, but only if no jobs are in failed state.")
+    parser.add_option("--kill", 
+        default = False, dest = "do_kill", action = "store_true",)
     parser.add_option("--add-crab-option", "-a", 
         dest = "additional_options", action = "append", default = [],
         help = "add options to the resubmit calls, for example        "
@@ -285,6 +287,41 @@ class CrabResult:
             printer.printBreak(1)
 
 
+    def kill(self, additional_options):
+
+        printer.printBreak(1)
+        printer.printDelim("=",30)
+        
+        # collect error log
+        errorlog = self.query.split("Error Summary: ")
+        if len(errorlog) == 2:  errorlog = errorlog[1]
+        else:                   errorlog = None
+
+        # kill options
+        kill_options = additional_options
+
+        # printer.printInfo("found failed jobs: {}".format(
+        #     self.detected_groups["failed"]))
+
+        # builindg command for killing
+        printer.printAction("building kill command...")
+        kill_command = ["crab", "kill"]+kill_options+[self.path]
+
+        # kill command
+        printer.printCommand(" ".join(kill_command))
+        process = subprocess.Popen(kill_command, 
+            stdout = subprocess.PIPE, 
+            stderr = subprocess.STDOUT, 
+            stdin  = subprocess.PIPE)
+        process.wait()
+        output = process.communicate()[0].decode()
+
+        # kill result
+        printer.printResult(output)
+        printer.printDelim("=",30)
+        printer.printBreak(1)
+
+
     def get_status_list(self, groups):
         status = []
         status.append(self.name)
@@ -348,6 +385,10 @@ def crab_query(project, opts):
     # potential immediate resubmit
     if opts.do_resubmit:
         res.resubmit(opts.additional_options)   
+
+    # potential immediate kill
+    if opts.do_kill:
+        res.kill(opts.additional_options)   
     
     return res
     

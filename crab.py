@@ -152,7 +152,7 @@ class CrabResult:
     def get_jobstatus(self):
         # look for entries of job status
         # Jobs status: idle 46.9% ( 68/145) running 35.9% ( 52/145) unsubmitted 17.2% ( 25/145)
-        jobstatus = self.query.split("Jobs status: ")
+        jobstatus = self.query.rsplit("Jobs status: ", 1)
         if not len(jobstatus) == 2:
             return False
 
